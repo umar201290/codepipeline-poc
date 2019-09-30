@@ -1,0 +1,56 @@
+version: 0.2
+
+env:
+  variables:
+    PROJECT: "tf-test-sample"
+    TF_VERSION: "0.12.3"
+
+#proxy:
+##  upload-artifacts: yes
+##  logs: yes
+
+phases:
+  initialize:
+#    runtime-versions:
+#      # Image to get the container to run the pipeline, May be ECR
+#      # refer: https://aws.amazon.com/blogs/devops/how-to-use-docker-images-from-a-private-registry-in-aws-codebuild-for-your-build-environment/
+       # Docker images from public Docker Hub or Amazon ECR only.
+    commands:
+      - echo Entering install phase...
+      - echo Install Terraform to deploy
+      - curl -s -qL -o terraform.zip https://releases.hashicorp.com/terraform/${TF_VERSION}/terraform_${TF_VERSION}_linux_amd64.zip
+      - unzip -o terraform.zip
+      - ./scripts/tf_initialize.sh
+      - pwd
+      - ls -ltr
+
+  pre_build:
+    commands:
+      - echo Entering pre_build phase ...
+      - ./scripts/tf_plan.sh
+      - pwd
+      - ls -ltr
+
+  build:
+    commands:
+      - echo Entering build phase...
+      - echo Build started on `date`
+      - pwd
+      - ls -ltr
+#      - ./scripts/tf_apply.sh
+
+  post_build:
+    commands:
+      - echo Entering post_build phase...
+      - echo Build completed on `date`
+      - ./scripts/tf_push_state_artifact.sh
+      - pwd
+      - ls -ltr
+
+artifacts:
+  type: zip
+  files:
+    - '*.tf'
+    - 'terraform.tfvars'
+    - 'scripts/*'
+  name: test-case-$(date +%Y-%m-%d)
